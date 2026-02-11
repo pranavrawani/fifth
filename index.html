@@ -9,11 +9,9 @@
             /* DESKTOP DEFAULT */
             --bg-color: #1a1a2e;
             --cube-size: 300px;
-            /* Half of cube size for 3D translation */
             --translate-z: 150px; 
         }
 
-        /* TABLET ADJUSTMENTS (max-width: 1024px) */
         @media (max-width: 1024px) {
             :root {
                 --cube-size: 240px;
@@ -21,7 +19,6 @@
             }
         }
 
-        /* MOBILE ADJUSTMENTS (max-width: 600px) */
         @media (max-width: 600px) {
             :root {
                 --cube-size: 180px;
@@ -39,11 +36,10 @@
             font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
             color: white;
-            perspective: 1000px; /* Essential for 3D effect */
-            touch-action: none; /* Prevents page scrolling when dragging cube */
+            perspective: 1000px;
+            touch-action: none; 
         }
 
-        /* --- THE CUBE CONTAINER --- */
         .scene {
             width: var(--cube-size);
             height: var(--cube-size);
@@ -55,22 +51,19 @@
             height: 100%;
             position: absolute;
             transform-style: preserve-3d;
-            transform: rotateX(-30deg) rotateY(-45deg); /* Initial tilt */
-            transition: transform 0.1s; /* Smooth dragging */
-            animation: autoSpin 15s infinite linear;
+            /* Initial position */
+            transform: rotateX(-20deg) rotateY(-45deg); 
+            /* REMOVED CSS ANIMATION HERE so JS can take full control */
         }
 
-        /* Pause auto-spin on hover or drag */
         .cube.is-dragging {
-            animation: none;
             cursor: grabbing;
         }
 
-        /* --- CUBE FACES --- */
         .cube-face {
             position: absolute;
-            width: calc(100% - 4px); /* Responsive width minus border */
-            height: calc(100% - 4px); /* Responsive height minus border */
+            width: calc(100% - 4px);
+            height: calc(100% - 4px);
             border: 2px solid rgba(255, 255, 255, 0.5);
             background: rgba(255, 255, 255, 0.1);
             display: flex;
@@ -79,10 +72,10 @@
             font-size: 20px;
             font-weight: bold;
             color: white;
-            backface-visibility: hidden; /* Hide back of images */
+            backface-visibility: hidden;
             cursor: pointer;
             transition: opacity 0.3s;
-            overflow: hidden; /* Keeps image inside border */
+            overflow: hidden;
         }
 
         .cube-face img {
@@ -91,7 +84,6 @@
             object-fit: cover;
         }
 
-        /* Positioning the 6 faces using CSS Variables */
         .face-front  { transform: rotateY(  0deg) translateZ(var(--translate-z)); }
         .face-right  { transform: rotateY( 90deg) translateZ(var(--translate-z)); }
         .face-back   { transform: rotateY(180deg) translateZ(var(--translate-z)); }
@@ -99,7 +91,6 @@
         .face-top    { transform: rotateX( 90deg) translateZ(var(--translate-z)); }
         .face-bottom { transform: rotateX(-90deg) translateZ(var(--translate-z)); }
 
-        /* --- OVERLAY MODAL --- */
         #modal {
             display: none;
             position: fixed;
@@ -138,7 +129,7 @@
             color: white;
             cursor: pointer;
             z-index: 101;
-            padding: 10px; /* Larger tap area */
+            padding: 10px;
         }
 
         .hint {
@@ -149,12 +140,6 @@
             pointer-events: none;
             text-align: center;
             width: 100%;
-        }
-
-        /* --- ANIMATIONS --- */
-        @keyframes autoSpin {
-            from { transform: rotateX(-20deg) rotateY(0deg); }
-            to   { transform: rotateX(-20deg) rotateY(360deg); }
         }
 
         @keyframes fadeIn {
@@ -203,9 +188,28 @@
         let currentX = -20; 
         let currentY = -45; 
         let previousMouseX, previousMouseY;
-        let totalMovement = 0; // Tracks if the user actually moved the mouse/finger
+        let totalMovement = 0; 
+        let isModalOpen = false;
 
-        // --- MOUSE/TOUCH EVENTS FOR ROTATION ---
+        // --- ANIMATION LOOP (Replaces CSS Animation) ---
+        function animate() {
+            // Only auto-spin if NOT dragging and Modal is closed
+            if (!isDragging && !isModalOpen) {
+                currentY += 0.2; // Speed of rotation (Increase number to spin faster)
+            }
+            
+            // Apply the transform constantly
+            cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+            
+            // Loop this function
+            requestAnimationFrame(animate);
+        }
+
+        // Start the loop
+        animate();
+
+
+        // --- MOUSE/TOUCH EVENTS ---
 
         document.addEventListener('mousedown', startDrag);
         document.addEventListener('touchstart', startDrag, {passive: false});
@@ -220,7 +224,7 @@
             if(e.target.closest('#modal')) return;
 
             isDragging = true;
-            totalMovement = 0; // Reset movement tracker
+            totalMovement = 0; 
             cube.classList.add('is-dragging'); 
             
             if (e.type === 'touchstart') {
@@ -248,13 +252,11 @@
             const deltaX = clientX - previousMouseX;
             const deltaY = clientY - previousMouseY;
 
-            // Track total movement to distinguish click from drag
             totalMovement += Math.abs(deltaX) + Math.abs(deltaY);
 
+            // Update rotation variables (The animate() function will actually draw this)
             currentY += deltaX * 0.5;
             currentX -= deltaY * 0.5;
-
-            cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
 
             previousMouseX = clientX;
             previousMouseY = clientY;
@@ -262,9 +264,6 @@
 
         function endDrag() {
             isDragging = false;
-            
-            // If the user barely moved the cursor/finger, assume they wanted to Click, not Drag.
-            // We set a small timeout to clear the flag
             setTimeout(() => {
                 cube.classList.remove('is-dragging');
             }, 100);
@@ -272,9 +271,7 @@
 
         // --- MODAL LOGIC ---
 
-        // We use a custom handler to check if it was a drag or a click
         function handleClick(e, text, imgSrc) {
-            // If total movement was greater than 10 pixels, it was a drag, so ignore the click
             if (totalMovement > 10) return;
 
             const modal = document.getElementById('modal');
@@ -284,10 +281,12 @@
             modalImg.src = imgSrc;
             modalText.innerText = text;
             modal.style.display = 'flex';
+            isModalOpen = true; // Stop spinning when reading
         }
 
         function closeMemory() {
             document.getElementById('modal').style.display = 'none';
+            isModalOpen = false; // Resume spinning
         }
     </script>
 </body>
