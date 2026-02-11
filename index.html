@@ -2,12 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Our Memory Cube</title>
     <style>
         :root {
+            /* DESKTOP DEFAULT */
             --bg-color: #1a1a2e;
             --cube-size: 300px;
+            /* Half of cube size for 3D translation */
+            --translate-z: 150px; 
+        }
+
+        /* TABLET ADJUSTMENTS (max-width: 1024px) */
+        @media (max-width: 1024px) {
+            :root {
+                --cube-size: 240px;
+                --translate-z: 120px;
+            }
+        }
+
+        /* MOBILE ADJUSTMENTS (max-width: 600px) */
+        @media (max-width: 600px) {
+            :root {
+                --cube-size: 180px;
+                --translate-z: 90px;
+            }
         }
 
         body {
@@ -21,6 +40,7 @@
             overflow: hidden;
             color: white;
             perspective: 1000px; /* Essential for 3D effect */
+            touch-action: none; /* Prevents page scrolling when dragging cube */
         }
 
         /* --- THE CUBE CONTAINER --- */
@@ -49,8 +69,8 @@
         /* --- CUBE FACES --- */
         .cube-face {
             position: absolute;
-            width: 296px; /* Slightly smaller to see edges */
-            height: 296px;
+            width: calc(100% - 4px); /* Responsive width minus border */
+            height: calc(100% - 4px); /* Responsive height minus border */
             border: 2px solid rgba(255, 255, 255, 0.5);
             background: rgba(255, 255, 255, 0.1);
             display: flex;
@@ -62,22 +82,22 @@
             backface-visibility: hidden; /* Hide back of images */
             cursor: pointer;
             transition: opacity 0.3s;
+            overflow: hidden; /* Keeps image inside border */
         }
 
         .cube-face img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 4px;
         }
 
-        /* Positioning the 6 faces */
-        .face-front  { transform: rotateY(  0deg) translateZ(150px); }
-        .face-right  { transform: rotateY( 90deg) translateZ(150px); }
-        .face-back   { transform: rotateY(180deg) translateZ(150px); }
-        .face-left   { transform: rotateY(-90deg) translateZ(150px); }
-        .face-top    { transform: rotateX( 90deg) translateZ(150px); }
-        .face-bottom { transform: rotateX(-90deg) translateZ(150px); }
+        /* Positioning the 6 faces using CSS Variables */
+        .face-front  { transform: rotateY(  0deg) translateZ(var(--translate-z)); }
+        .face-right  { transform: rotateY( 90deg) translateZ(var(--translate-z)); }
+        .face-back   { transform: rotateY(180deg) translateZ(var(--translate-z)); }
+        .face-left   { transform: rotateY(-90deg) translateZ(var(--translate-z)); }
+        .face-top    { transform: rotateX( 90deg) translateZ(var(--translate-z)); }
+        .face-bottom { transform: rotateX(-90deg) translateZ(var(--translate-z)); }
 
         /* --- OVERLAY MODAL --- */
         #modal {
@@ -90,37 +110,45 @@
             justify-content: center;
             align-items: center;
             animation: fadeIn 0.5s;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         #modal img {
-            max-width: 90%;
-            max-height: 60vh;
+            max-width: 100%;
+            max-height: 50vh;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(255,255,255,0.2);
         }
 
         #modal-text {
             margin-top: 20px;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             text-align: center;
-            padding: 0 20px;
+            color: #fff;
+            max-width: 600px;
+            line-height: 1.5;
         }
 
         #close-btn {
             position: absolute;
             top: 20px;
             right: 20px;
-            font-size: 2rem;
+            font-size: 2.5rem;
             color: white;
             cursor: pointer;
+            z-index: 101;
+            padding: 10px; /* Larger tap area */
         }
 
         .hint {
             position: absolute;
             bottom: 30px;
             opacity: 0.6;
-            font-size: 0.9rem;
+            font-size: 1rem;
             pointer-events: none;
+            text-align: center;
+            width: 100%;
         }
 
         /* --- ANIMATIONS --- */
@@ -133,39 +161,28 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-
-        /* Mobile Adjustment */
-        @media (max-width: 600px) {
-            :root { --cube-size: 200px; }
-            .face-front  { transform: rotateY(  0deg) translateZ(100px); }
-            .face-right  { transform: rotateY( 90deg) translateZ(100px); }
-            .face-back   { transform: rotateY(180deg) translateZ(100px); }
-            .face-left   { transform: rotateY(-90deg) translateZ(100px); }
-            .face-top    { transform: rotateX( 90deg) translateZ(100px); }
-            .face-bottom { transform: rotateX(-90deg) translateZ(100px); }
-        }
     </style>
 </head>
 <body>
 
     <div class="scene">
         <div class="cube">
-            <div class="cube-face face-front" onclick="openMemory('This is where it all started ❤️', 'https://images.unsplash.com/photo-1516589174418-0a41f97480a8?auto=format&fit=crop&w=500')">
+            <div class="cube-face face-front" onclick="handleClick(event, 'This is where it all started ❤️', 'https://images.unsplash.com/photo-1516589174418-0a41f97480a8?auto=format&fit=crop&w=500')">
                 <img src="https://images.unsplash.com/photo-1516589174418-0a41f97480a8?auto=format&fit=crop&w=500" alt="Memory 1">
             </div>
-            <div class="cube-face face-back" onclick="openMemory('Our first trip together!', 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=500')">
+            <div class="cube-face face-back" onclick="handleClick(event, 'Our first trip together!', 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=500')">
                 <img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=500" alt="Memory 2">
             </div>
-            <div class="cube-face face-right" onclick="openMemory('The day you said Yes!', 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=500')">
+            <div class="cube-face face-right" onclick="handleClick(event, 'The day you said Yes!', 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=500')">
                 <img src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=500" alt="Memory 3">
             </div>
-            <div class="cube-face face-left" onclick="openMemory('Just being silly :P', 'https://images.unsplash.com/photo-1523419409543-a5e549c1faa8?auto=format&fit=crop&w=500')">
+            <div class="cube-face face-left" onclick="handleClick(event, 'Just being silly :P', 'https://images.unsplash.com/photo-1523419409543-a5e549c1faa8?auto=format&fit=crop&w=500')">
                 <img src="https://images.unsplash.com/photo-1523419409543-a5e549c1faa8?auto=format&fit=crop&w=500" alt="Memory 4">
             </div>
-            <div class="cube-face face-top" onclick="openMemory('My favorite smile.', 'https://images.unsplash.com/photo-1513258496098-882605922721?auto=format&fit=crop&w=500')">
+            <div class="cube-face face-top" onclick="handleClick(event, 'My favorite smile.', 'https://images.unsplash.com/photo-1513258496098-882605922721?auto=format&fit=crop&w=500')">
                 <img src="https://images.unsplash.com/photo-1513258496098-882605922721?auto=format&fit=crop&w=500" alt="Memory 5">
             </div>
-            <div class="cube-face face-bottom" onclick="openMemory('To many more memories...', 'https://images.unsplash.com/photo-1621600411688-4be93cd68504?auto=format&fit=crop&w=500')">
+            <div class="cube-face face-bottom" onclick="handleClick(event, 'To many more memories...', 'https://images.unsplash.com/photo-1621600411688-4be93cd68504?auto=format&fit=crop&w=500')">
                 <img src="https://images.unsplash.com/photo-1621600411688-4be93cd68504?auto=format&fit=crop&w=500" alt="Memory 6">
             </div>
         </div>
@@ -183,9 +200,10 @@
         const cube = document.querySelector('.cube');
         let isDragging = false;
         let startX, startY;
-        let currentX = -20; // Initial rotation X
-        let currentY = -45; // Initial rotation Y
+        let currentX = -20; 
+        let currentY = -45; 
         let previousMouseX, previousMouseY;
+        let totalMovement = 0; // Tracks if the user actually moved the mouse/finger
 
         // --- MOUSE/TOUCH EVENTS FOR ROTATION ---
 
@@ -199,13 +217,12 @@
         document.addEventListener('touchend', endDrag);
 
         function startDrag(e) {
-            // Don't drag if clicking a modal or button
             if(e.target.closest('#modal')) return;
 
             isDragging = true;
-            cube.classList.add('is-dragging'); // Stops auto-spin
+            totalMovement = 0; // Reset movement tracker
+            cube.classList.add('is-dragging'); 
             
-            // Get start position
             if (e.type === 'touchstart') {
                 previousMouseX = e.touches[0].clientX;
                 previousMouseY = e.touches[0].clientY;
@@ -217,7 +234,7 @@
 
         function drag(e) {
             if (!isDragging) return;
-            e.preventDefault(); // Stop scrolling on mobile while dragging cube
+            e.preventDefault(); 
 
             let clientX, clientY;
             if (e.type === 'touchmove') {
@@ -231,11 +248,12 @@
             const deltaX = clientX - previousMouseX;
             const deltaY = clientY - previousMouseY;
 
-            // Update rotation angles
+            // Track total movement to distinguish click from drag
+            totalMovement += Math.abs(deltaX) + Math.abs(deltaY);
+
             currentY += deltaX * 0.5;
             currentX -= deltaY * 0.5;
 
-            // Apply transform
             cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
 
             previousMouseX = clientX;
@@ -244,21 +262,20 @@
 
         function endDrag() {
             isDragging = false;
-            // Note: We don't remove 'is-dragging' class immediately so it doesn't snap back to auto-spin awkwardly.
-            // Alternatively, you can remove it to resume spinning from 0, or calculate momentum.
-            // For simplicity, we leave it manual once touched, or reset after a delay:
+            
+            // If the user barely moved the cursor/finger, assume they wanted to Click, not Drag.
+            // We set a small timeout to clear the flag
             setTimeout(() => {
-                if(!isDragging) {
-                     // Optional: Resume auto-spin logic could go here
-                }
-            }, 1000);
+                cube.classList.remove('is-dragging');
+            }, 100);
         }
 
         // --- MODAL LOGIC ---
 
-        function openMemory(text, imgSrc) {
-            // Prevent opening if we were just dragging
-            if (isDragging) return; 
+        // We use a custom handler to check if it was a drag or a click
+        function handleClick(e, text, imgSrc) {
+            // If total movement was greater than 10 pixels, it was a drag, so ignore the click
+            if (totalMovement > 10) return;
 
             const modal = document.getElementById('modal');
             const modalImg = document.getElementById('modal-img');
